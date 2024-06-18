@@ -1,15 +1,12 @@
 package com.localconsciousness;
 
 import net.runelite.api.*;
-import net.runelite.api.Point;
-import net.runelite.client.game.ItemManager;
 import net.runelite.client.ui.overlay.Overlay;
 import net.runelite.client.ui.overlay.OverlayLayer;
 import net.runelite.client.ui.overlay.OverlayPosition;
 
 import javax.inject.Inject;
 import java.awt.*;
-import java.awt.image.BufferedImage;
 
 public class LocalConsciousnessOverlay extends Overlay
 {

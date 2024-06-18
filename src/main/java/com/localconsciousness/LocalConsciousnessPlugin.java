@@ -5,13 +5,9 @@ import javax.inject.Inject;
 import java.awt.image.BufferedImage;
 import java.util.Random;
 
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.ChatMessageType;
 import net.runelite.api.Client;
-import net.runelite.api.GameState;
 import net.runelite.api.events.CanvasSizeChanged;
-import net.runelite.api.events.GameStateChanged;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.events.ConfigChanged;
@@ -44,24 +40,15 @@ public class LocalConsciousnessPlugin extends Plugin
 	@Inject
 	private ItemManager itemManager;
 
-	@Getter
 	private BufferedImage currentItem;
 	private int currentItemID;
-
-	@Getter
 	private int itemWidth;
-	@Getter
 	private int itemHeight;
-
-	@Getter
 	private int x;
-	@Getter
 	private int y;
 	private double angle;
 	private int canvasHeight;
 	private int canvasWidth;
-
-	@Getter
 	private boolean active;
 	private Random rand;
 
@@ -89,13 +76,26 @@ public class LocalConsciousnessPlugin extends Plugin
 		return active;
 	}
 
+	private void resetMovement()
+	{
+		float wiggle = (rand.nextFloat() * 80.0f) + 5.0f;
+		angle = (rand.nextInt(4) * 90 ) + wiggle;
+		canvasWidth = client.getCanvasWidth();
+		canvasHeight = client.getCanvasHeight();
+		int sizeOffsetX = itemWidth / 2;
+		int sizeOffsetY = itemHeight / 2;
+		x = canvasWidth / 2;
+		x -= sizeOffsetX;
+		y = canvasHeight / 2;
+		y -= sizeOffsetY;
+	}
+
 	@Override
 	protected void startUp() throws Exception
 	{
 		active = true;
 		rand = new Random();
-		float wiggle = (rand.nextFloat() * 80.0f) + 5.0f;
-		angle = (rand.nextInt(4) * 90 ) + wiggle;
+		resetMovement();
 
 		currentItem = itemManager.getImage(config.item());
 		currentItemID = config.item();
@@ -107,20 +107,12 @@ public class LocalConsciousnessPlugin extends Plugin
 	{
 		active = false;
 		// This is here to make the sprite restart from the center on plugin restart
-		canvasWidth = client.getCanvasWidth();
-		canvasHeight = client.getCanvasHeight();
-		x = canvasWidth / 2;
-		y = canvasHeight / 2;
+
 	}
 
 	@Subscribe
 	protected void onCanvasSizeChanged(CanvasSizeChanged canvasSizeChanged) {
-		canvasWidth = client.getCanvasWidth();
-		canvasHeight = client.getCanvasHeight();
-		x = canvasWidth / 2;
-		y = canvasHeight / 2;
-		float wiggle = (rand.nextFloat() * 80.0f) + 5.0f;
-		angle = (rand.nextInt(4) * 90 ) + wiggle;
+		resetMovement();
 	}
 
 	@Subscribe
