@@ -132,6 +132,10 @@ public class LocalConsciousnessPlugin extends Plugin
 		int nextX = (int) (cosAngle * speed);
 		int nextY = (int) (sinAngle * speed);
 
+		// Fix for low speed values causing movement to stop
+		if(nextX == 0) nextX = (int)(1 * Math.signum(cosAngle));
+		if(nextY == 0) nextY = (int)(1 * Math.signum(sinAngle));
+
 		x += nextX;
 		y += nextY;
 	}
