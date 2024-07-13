@@ -174,9 +174,14 @@ public class LocalConsciousnessPlugin extends Plugin
 
 		double speed = config.speed() / 10.0d;
 
+		if(x > canvasWidth) x = canvasWidth;
+		if(x < 0) x = 0;
 		if(x >= canvasWidth - itemWidth || x <= 0) {
 			angle = 180 - angle;
 		}
+
+		if(y > canvasHeight) y = canvasHeight;
+		if(y < 0) y = 0;
 		if(y >= canvasHeight - itemHeight || y <= 0) {
 			angle = 360 - angle;
 		}
