@@ -93,8 +93,6 @@ public class LocalConsciousnessPlugin extends Plugin
 	@Override
 	protected void startUp() throws Exception
 	{
-		overlayManager.add(overlay);
-
 		rand = new Random();
 		resetMovement();
 
@@ -142,7 +140,10 @@ public class LocalConsciousnessPlugin extends Plugin
 	@Subscribe
 	public void onConfigChanged(ConfigChanged event)
 	{
-		if(currentItemID != config.item()) currentItem = itemManager.getImage(config.item());
+		if(currentItemID != config.item()) {
+			currentItem = itemManager.getImage(config.item());
+		}
+
 
 		float sizeMult = config.size() / 100.0f;
 		itemWidth = (int)(currentItem.getWidth() * sizeMult);
