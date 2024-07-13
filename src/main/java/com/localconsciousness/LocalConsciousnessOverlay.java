@@ -31,7 +31,7 @@ public class LocalConsciousnessOverlay extends Overlay
 		graphics.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, config.opacity() / 100.0f));
 		graphics.drawImage(plugin.getCurrentItem(),
 						plugin.getX(), plugin.getY(),
-						plugin.getItemWidth(), plugin.getItemHeight(), null);
+						plugin.getWidth(), plugin.getHeight(), null);
 		return null;
 	}
 }

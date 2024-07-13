@@ -8,6 +8,7 @@ import java.util.Random;
 
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import net.runelite.api.ChatMessageType;
 import net.runelite.api.Client;
 import net.runelite.api.events.CanvasSizeChanged;
 import net.runelite.client.config.ConfigManager;
@@ -44,21 +45,22 @@ public class LocalConsciousnessPlugin extends Plugin
 
 	@Getter
 	private BufferedImage currentItem;
-	private int newItemID;
-	private int currentItemID;
 	private int size;
 	@Getter
-	private int itemWidth;
+	private int width;
 	@Getter
-	private int itemHeight;
+	private int height;
 	@Getter
 	private int x;
 	@Getter
 	private int y;
+	private int newItemID;
+	private int currentItemID;
 	private double angle;
 	private int canvasHeight;
 	private int canvasWidth;
 	private Random rand;
+	private boolean checkedForOversize = false;
 
 	private void resetMovement()
 	{
@@ -66,8 +68,8 @@ public class LocalConsciousnessPlugin extends Plugin
 		angle = (rand.nextInt(4) * 90 ) + wiggle;
 		canvasWidth = client.getCanvasWidth();
 		canvasHeight = client.getCanvasHeight();
-		int sizeOffsetX = itemWidth / 2;
-		int sizeOffsetY = itemHeight / 2;
+		int sizeOffsetX = width / 2;
+		int sizeOffsetY = height / 2;
 		x = canvasWidth / 2;
 		x -= sizeOffsetX;
 		y = canvasHeight / 2;
@@ -166,8 +168,8 @@ public class LocalConsciousnessPlugin extends Plugin
 			}
 
 			float sizeMult = size / 100.0f;
-			itemWidth = (int)(currentItem.getWidth() * sizeMult);
-			itemHeight = (int)(currentItem.getHeight() * sizeMult);
+			width = (int)(currentItem.getWidth() * sizeMult);
+			height = (int)(currentItem.getHeight() * sizeMult);
 
 			currentItemID = newItemID;
 		}
@@ -176,15 +178,17 @@ public class LocalConsciousnessPlugin extends Plugin
 
 		if(x > canvasWidth) x = canvasWidth;
 		if(x < 0) x = 0;
-		if(x >= canvasWidth - itemWidth || x <= 0) {
+		if(x >= canvasWidth - width || x <= 0) {
 			angle = 180 - angle;
 		}
 
 		if(y > canvasHeight) y = canvasHeight;
 		if(y < 0) y = 0;
-		if(y >= canvasHeight - itemHeight || y <= 0) {
+		if(y >= canvasHeight - height || y <= 0) {
 			angle = 360 - angle;
 		}
+
+		angle %= 360;
 
 		double cosComponent = Math.cos(Math.toRadians(angle));
 		double sinComponent = Math.sin(Math.toRadians(angle));
@@ -198,13 +202,33 @@ public class LocalConsciousnessPlugin extends Plugin
 
 		x += nextX;
 		y += nextY;
+
+		if(!checkedForOversize) {
+			if(width >= canvasWidth
+				|| height >= canvasHeight) {
+				client.addChatMessage(ChatMessageType.GAMEMESSAGE, "",
+						"Your local consciousness sprite may be too big! Consider reducing its size.", "");
+			}
+			checkedForOversize = true;
+		}
 	}
 
 	@Subscribe
 	public void onConfigChanged(ConfigChanged event)
 	{
 		newItemID = config.item();
-		size = config.size();
+
+		int newSize = config.size();
+		if(newSize != size) {
+			size = newSize;
+			float sizeMult = size / 100.0f;
+			width = (int)(currentItem.getWidth() * sizeMult);
+			height = (int)(currentItem.getHeight() * sizeMult);
+
+			resetMovement();
+		}
+
+		checkedForOversize = false;
 	}
 
 	@Provides
