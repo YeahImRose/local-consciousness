@@ -3,6 +3,7 @@ package com.localconsciousness;
 import com.google.inject.Provides;
 import javax.inject.Inject;
 import java.awt.image.BufferedImage;
+import java.awt.image.WritableRaster;
 import java.util.Random;
 
 import lombok.extern.slf4j.Slf4j;
@@ -41,7 +42,9 @@ public class LocalConsciousnessPlugin extends Plugin
 	private ItemManager itemManager;
 
 	private BufferedImage currentItem;
+	private int newItemID;
 	private int currentItemID;
+	private int size;
 	private int itemWidth;
 	private int itemHeight;
 	private int x;
@@ -90,6 +93,63 @@ public class LocalConsciousnessPlugin extends Plugin
 		y -= sizeOffsetY;
 	}
 
+
+	private BufferedImage cropSpriteByTransparency(BufferedImage sprite)
+	{
+		// Method from https://stackoverflow.com/a/36938923
+		WritableRaster raster = sprite.getAlphaRaster();
+		int width = raster.getWidth();
+		int height = raster.getHeight();
+		int left = 0;
+		int top = 0;
+		int right = width - 1;
+		int bottom = height - 1;
+		int minRight = width - 1;
+		int minBottom = height - 1;
+
+		top:
+		for (;top <= bottom; top++){
+			for (int x = 0; x < width; x++){
+				if (raster.getSample(x, top, 0) != 0){
+					minRight = x;
+					minBottom = top;
+					break top;
+				}
+			}
+		}
+
+		left:
+		for (;left < minRight; left++){
+			for (int y = height - 1; y > top; y--){
+				if (raster.getSample(left, y, 0) != 0){
+					minBottom = y;
+					break left;
+				}
+			}
+		}
+
+		bottom:
+		for (;bottom > minBottom; bottom--){
+			for (int x = width - 1; x >= left; x--){
+				if (raster.getSample(x, bottom, 0) != 0){
+					minRight = x;
+					break bottom;
+				}
+			}
+		}
+
+		right:
+		for (;right > minRight; right--){
+			for (int y = bottom; y >= top; y--){
+				if (raster.getSample(right, y, 0) != 0){
+					break right;
+				}
+			}
+		}
+
+		return sprite.getSubimage(left, top, right - left + 1, bottom - top + 1);
+	}
+
 	@Override
 	protected void startUp() throws Exception
 	{
@@ -114,6 +174,23 @@ public class LocalConsciousnessPlugin extends Plugin
 
 	@Subscribe
 	protected void onClientTick(ClientTick tick) {
+		// This needs to be in onClientTick due to getImage not guaranteeing
+		// A proper image to be returned 
+		if (newItemID != currentItemID) {
+			BufferedImage item = itemManager.getImage(newItemID);
+			try {
+				currentItem = cropSpriteByTransparency(item);
+			} catch (Exception e) {
+				// This is just here to catch weird empty items, such as 798, 12897, 12898, etc.
+			}
+
+			float sizeMult = size / 100.0f;
+			itemWidth = (int)(currentItem.getWidth() * sizeMult);
+			itemHeight = (int)(currentItem.getHeight() * sizeMult);
+
+			currentItemID = newItemID;
+		}
+
 		double speed = config.speed() / 10.0d;
 
 		if(x >= canvasWidth - itemWidth || x <= 0) {
@@ -123,15 +200,15 @@ public class LocalConsciousnessPlugin extends Plugin
 			angle = 360 - angle;
 		}
 
-		double cosAngle = Math.cos(Math.toRadians(angle));
-		double sinAngle = Math.sin(Math.toRadians(angle));
+		double cosComponent = Math.cos(Math.toRadians(angle));
+		double sinComponent = Math.sin(Math.toRadians(angle));
 
-		int nextX = (int) (cosAngle * speed);
-		int nextY = (int) (sinAngle * speed);
+		int nextX = (int) (cosComponent * speed);
+		int nextY = (int) (sinComponent * speed);
 
 		// Fix for low speed values causing movement to stop
-		if(nextX == 0) nextX = (int)(1 * Math.signum(cosAngle));
-		if(nextY == 0) nextY = (int)(1 * Math.signum(sinAngle));
+		if(nextX == 0) nextX = (int)(1 * Math.signum(cosComponent));
+		if(nextY == 0) nextY = (int)(1 * Math.signum(sinComponent));
 
 		x += nextX;
 		y += nextY;
@@ -140,14 +217,8 @@ public class LocalConsciousnessPlugin extends Plugin
 	@Subscribe
 	public void onConfigChanged(ConfigChanged event)
 	{
-		if(currentItemID != config.item()) {
-			currentItem = itemManager.getImage(config.item());
-		}
-
-
-		float sizeMult = config.size() / 100.0f;
-		itemWidth = (int)(currentItem.getWidth() * sizeMult);
-		itemHeight = (int)(currentItem.getHeight() * sizeMult);
+		newItemID = config.item();
+		size = config.size();
 	}
 
 	@Provides
