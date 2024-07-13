@@ -10,7 +10,6 @@ import java.awt.*;
 
 public class LocalConsciousnessOverlay extends Overlay
 {
-	private final Client client;
 	private final LocalConsciousnessPlugin plugin;
 	private final LocalConsciousnessConfig config;
 
@@ -20,7 +19,6 @@ public class LocalConsciousnessOverlay extends Overlay
 	private LocalConsciousnessOverlay(Client client, LocalConsciousnessPlugin plugin, LocalConsciousnessConfig config)
 	{
 		super(plugin);
-		this.client = client;
 		this.plugin = plugin;
 		this.config = config;
 		setPosition(OverlayPosition.DYNAMIC);

@@ -6,6 +6,7 @@ import java.awt.image.BufferedImage;
 import java.awt.image.WritableRaster;
 import java.util.Random;
 
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.events.CanvasSizeChanged;
@@ -41,43 +42,23 @@ public class LocalConsciousnessPlugin extends Plugin
 	@Inject
 	private ItemManager itemManager;
 
+	@Getter
 	private BufferedImage currentItem;
 	private int newItemID;
 	private int currentItemID;
 	private int size;
+	@Getter
 	private int itemWidth;
+	@Getter
 	private int itemHeight;
+	@Getter
 	private int x;
+	@Getter
 	private int y;
 	private double angle;
 	private int canvasHeight;
 	private int canvasWidth;
-	private boolean active;
 	private Random rand;
-
-	public BufferedImage getCurrentItem() {
-		return currentItem;
-	}
-
-	public int getX() {
-		return x;
-	}
-
-	public int getY() {
-		return y;
-	}
-
-	public int getItemWidth() {
-		return itemWidth;
-	}
-
-	public int getItemHeight() {
-		return itemHeight;
-	}
-
-	public boolean getActive() {
-		return active;
-	}
 
 	private void resetMovement()
 	{
@@ -175,7 +156,7 @@ public class LocalConsciousnessPlugin extends Plugin
 	@Subscribe
 	protected void onClientTick(ClientTick tick) {
 		// This needs to be in onClientTick due to getImage not guaranteeing
-		// A proper image to be returned 
+		// A proper image to be returned
 		if (newItemID != currentItemID) {
 			BufferedImage item = itemManager.getImage(newItemID);
 			try {
