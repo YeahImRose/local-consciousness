@@ -30,8 +30,6 @@ public class LocalConsciousnessOverlay extends Overlay
 
 	@Override
 	public Dimension render(Graphics2D graphics) {
-		// I'm sure there's a better way to do this
-		if(!plugin.getActive()) return null;
 		graphics.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, config.opacity() / 100.0f));
 		graphics.drawImage(plugin.getCurrentItem(),
 						plugin.getX(), plugin.getY(),

@@ -21,7 +21,7 @@ import net.runelite.client.ui.overlay.OverlayManager;
 
 @Slf4j
 @PluginDescriptor(
-	name = "Local Consciousness"
+	name = "Local Consciousness", description = "Make an item bounce around your screen!", enabledByDefault = true
 )
 public class LocalConsciousnessPlugin extends Plugin
 {
@@ -93,7 +93,8 @@ public class LocalConsciousnessPlugin extends Plugin
 	@Override
 	protected void startUp() throws Exception
 	{
-		active = true;
+		overlayManager.add(overlay);
+
 		rand = new Random();
 		resetMovement();
 
@@ -105,9 +106,7 @@ public class LocalConsciousnessPlugin extends Plugin
 	@Override
 	protected void shutDown() throws Exception
 	{
-		active = false;
-		// This is here to make the sprite restart from the center on plugin restart
-
+		overlayManager.remove(overlay);
 	}
 
 	@Subscribe
