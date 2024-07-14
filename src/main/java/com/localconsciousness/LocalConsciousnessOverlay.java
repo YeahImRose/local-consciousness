@@ -30,7 +30,7 @@ public class LocalConsciousnessOverlay extends Overlay
 	public Dimension render(Graphics2D graphics) {
 		graphics.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, config.opacity() / 100.0f));
 		graphics.drawImage(plugin.getCurrentItem(),
-						plugin.getX(), plugin.getY(),
+				(int)plugin.getX(), (int)plugin.getY(),
 						plugin.getWidth(), plugin.getHeight(), null);
 		return null;
 	}

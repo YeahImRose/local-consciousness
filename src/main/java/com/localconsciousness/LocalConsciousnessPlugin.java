@@ -51,9 +51,9 @@ public class LocalConsciousnessPlugin extends Plugin
 	@Getter
 	private int height;
 	@Getter
-	private int x;
+	private double x;
 	@Getter
-	private int y;
+	private double y;
 	private int newItemID;
 	private int currentItemID;
 	private double angle;
@@ -193,12 +193,12 @@ public class LocalConsciousnessPlugin extends Plugin
 		double cosComponent = Math.cos(Math.toRadians(angle));
 		double sinComponent = Math.sin(Math.toRadians(angle));
 
-		int nextX = (int) (cosComponent * speed);
-		int nextY = (int) (sinComponent * speed);
+		double nextX = cosComponent * speed;
+		double nextY = sinComponent * speed;
 
 		// Fix for low speed values causing movement to stop
-		if(nextX == 0) nextX = (int)(1 * Math.signum(cosComponent));
-		if(nextY == 0) nextY = (int)(1 * Math.signum(sinComponent));
+		//if(nextX == 0) nextX = (int)(1 * Math.signum(cosComponent));
+		//if(nextY == 0) nextY = (int)(1 * Math.signum(sinComponent));
 
 		x += nextX;
 		y += nextY;
