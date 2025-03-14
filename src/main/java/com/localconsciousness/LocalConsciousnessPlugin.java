@@ -160,7 +160,7 @@ public class LocalConsciousnessPlugin extends Plugin
 
 		currentItem = itemManager.getImage(config.item());
 		currentItemID = config.item();
-		updateItem();
+		clientThread.invokeLater(this::updateItem);
 		overlayManager.add(overlay);
 		// Used in place of a check here for needing to add panel button or not
 		updateShowPanelButton();
@@ -221,7 +221,7 @@ public class LocalConsciousnessPlugin extends Plugin
 		if(!Objects.equals(event.getGroup(), "localconsciousness")) return;
 		switch(event.getKey()) {
 			case "item":
-				updateItem();
+				clientThread.invokeLater(this::updateItem);
 				break;
 			case "size":
 				updateSize();
@@ -238,7 +238,10 @@ public class LocalConsciousnessPlugin extends Plugin
 		}
 	}
 
-	private void updateItem() {
+	private boolean updateItem() {
+		if(client.getGameState() != GameState.LOGGED_IN) {
+            return false;
+		}
 		currentItemID = config.item();
 
 		clientThread.invokeLater(() -> {
@@ -256,6 +259,7 @@ public class LocalConsciousnessPlugin extends Plugin
 		resetMovement();
 
 		checkedForOversize = false;
+		return true;
 	}
 	private void updateSize() {
 		size = config.size();
