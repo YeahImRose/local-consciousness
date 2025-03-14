@@ -2,24 +2,30 @@ package com.localconsciousness;
 
 import com.google.inject.Provides;
 import javax.inject.Inject;
+import javax.swing.*;
 import java.awt.image.BufferedImage;
 import java.awt.image.WritableRaster;
+import java.util.Objects;
 import java.util.Random;
 
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.ChatMessageType;
 import net.runelite.api.Client;
+import net.runelite.api.GameState;
 import net.runelite.api.events.CanvasSizeChanged;
+import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.game.ItemManager;
+import net.runelite.client.game.chatbox.ChatboxItemSearch;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.api.events.ClientTick;
 import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.client.ui.ClientToolbar;
+import net.runelite.client.ui.NavigationButton;
 import net.runelite.client.ui.overlay.OverlayManager;
-
 
 
 @Slf4j
@@ -41,10 +47,24 @@ public class LocalConsciousnessPlugin extends Plugin
 	private OverlayManager overlayManager;
 
 	@Inject
+	private ChatboxItemSearch itemSearch;
+
+	@Inject
 	private ItemManager itemManager;
+
+	@Inject
+	private ConfigManager configManager;
+	@Inject
+	private ClientToolbar clientToolbar;
+
+	@Inject
+	@Getter
+	private ClientThread clientThread;
+	private NavigationButton navButton;
 
 	@Getter
 	private BufferedImage currentItem;
+	private LocalConsciousnessPanel panel;
 	private int size;
 	@Getter
 	private int width;
@@ -54,7 +74,7 @@ public class LocalConsciousnessPlugin extends Plugin
 	private double x;
 	@Getter
 	private double y;
-	private int newItemID;
+	@Getter
 	private int currentItemID;
 	private double angle;
 	private int canvasHeight;
@@ -75,7 +95,6 @@ public class LocalConsciousnessPlugin extends Plugin
 		y = canvasHeight / 2;
 		y -= sizeOffsetY;
 	}
-
 
 	private BufferedImage cropSpriteByTransparency(BufferedImage sprite)
 	{
@@ -141,13 +160,17 @@ public class LocalConsciousnessPlugin extends Plugin
 
 		currentItem = itemManager.getImage(config.item());
 		currentItemID = config.item();
+		updateItem();
 		overlayManager.add(overlay);
+		// Used in place of a check here for needing to add panel button or not
+		updateShowPanelButton();
 	}
 
 	@Override
 	protected void shutDown() throws Exception
 	{
 		overlayManager.remove(overlay);
+		clientToolbar.removeNavigation(navButton);
 	}
 
 	@Subscribe
@@ -157,23 +180,6 @@ public class LocalConsciousnessPlugin extends Plugin
 
 	@Subscribe
 	protected void onClientTick(ClientTick tick) {
-		// This needs to be in onClientTick due to getImage not guaranteeing
-		// A proper image to be returned
-		if (newItemID != currentItemID) {
-			BufferedImage item = itemManager.getImage(newItemID);
-			try {
-				currentItem = cropSpriteByTransparency(item);
-			} catch (Exception e) {
-				// This is just here to catch weird empty items, such as 798, 12897, 12898, etc.
-			}
-
-			float sizeMult = size / 100.0f;
-			width = (int)(currentItem.getWidth() * sizeMult);
-			height = (int)(currentItem.getHeight() * sizeMult);
-
-			currentItemID = newItemID;
-		}
-
 		double speed = config.speed() / 10.0d;
 
 		if(x > canvasWidth) x = canvasWidth;
@@ -196,10 +202,6 @@ public class LocalConsciousnessPlugin extends Plugin
 		double nextX = cosComponent * speed;
 		double nextY = sinComponent * speed;
 
-		// Fix for low speed values causing movement to stop
-		//if(nextX == 0) nextX = (int)(1 * Math.signum(cosComponent));
-		//if(nextY == 0) nextY = (int)(1 * Math.signum(sinComponent));
-
 		x += nextX;
 		y += nextY;
 
@@ -216,24 +218,112 @@ public class LocalConsciousnessPlugin extends Plugin
 	@Subscribe
 	public void onConfigChanged(ConfigChanged event)
 	{
-		newItemID = config.item();
-
-		int newSize = config.size();
-		if(newSize != size) {
-			size = newSize;
-			float sizeMult = size / 100.0f;
-			width = (int)(currentItem.getWidth() * sizeMult);
-			height = (int)(currentItem.getHeight() * sizeMult);
-
-			resetMovement();
+		if(!Objects.equals(event.getGroup(), "localconsciousness")) return;
+		switch(event.getKey()) {
+			case "item":
+				updateItem();
+				break;
+			case "size":
+				updateSize();
+				resetMovement();
+				break;
+			case "speed":
+				break;
+			case "opacity":
+				break;
+			case "showPanelButton":
+				updateShowPanelButton();
+				break;
+			default: break;
 		}
+	}
+
+	private void updateItem() {
+		currentItemID = config.item();
+
+		clientThread.invokeLater(() -> {
+			BufferedImage item = itemManager.getImage(currentItemID);
+			try {
+				currentItem = cropSpriteByTransparency(item);
+			} catch (Exception e) {
+				// This is just here to catch weird empty items, such as 798, 12897, 12898, etc.
+			}
+			updateShowPanelButton();
+			updatePanelItemName();
+			// Must be run after updating item image
+			updateSize();
+		});
+		resetMovement();
 
 		checkedForOversize = false;
 	}
+	private void updateSize() {
+		size = config.size();
+		float sizeMult = size / 100.0f;
+		width = (int)(currentItem.getWidth() * sizeMult);
+		height = (int)(currentItem.getHeight() * sizeMult);
+	}
+	private void updateSpeed() {
+	}
+	private void updateOpacity() {
+	}
+	private void updateShowPanelButton() {
+		if(config.showPanelButton()) {
+			navButton = buildNavigationButton();
+			clientToolbar.addNavigation(navButton);
+
+			updatePanelItemName();
+		} else {
+			if(navButton != null) {
+				clientToolbar.removeNavigation(navButton);
+			}
+		}
+	}
+	private void updatePanelItemName()
+	{
+		clientThread.invokeLater(() -> {
+			String name = itemManager.getItemComposition(currentItemID).getName();
+			panel.updateItemName(name);
+		});
+	}
+	public void updateFromSearch()
+	{
+		if (client.getGameState() != GameState.LOGGED_IN)
+		{
+			JOptionPane.showMessageDialog(panel,
+					"You must be logged in to search.",
+					"Cannot Search for Item",
+					JOptionPane.ERROR_MESSAGE);
+			return;
+		}
+
+		itemSearch
+				.tooltipText("Set item to")
+				.onItemSelected((itemId) -> {
+					clientThread.invokeLater(() ->
+					{
+						int finalId = itemManager.canonicalize(itemId);
+						final String itemName = itemManager.getItemComposition(finalId).getName();
+						configManager.setConfiguration("localconsciousness", "item", finalId);
+					});
+				})
+				.build();
+	};
 
 	@Provides
 	LocalConsciousnessConfig provideConfig(ConfigManager configManager)
 	{
 		return configManager.getConfig(LocalConsciousnessConfig.class);
+	}
+
+	private NavigationButton buildNavigationButton() {
+		panel = new LocalConsciousnessPanel(client, config, this, configManager);
+		navButton = NavigationButton.builder()
+				.tooltip("Local Consciousness")
+				.priority(6)
+				.panel(panel)
+				.icon(currentItem)
+				.build();
+		return navButton;
 	}
 }
