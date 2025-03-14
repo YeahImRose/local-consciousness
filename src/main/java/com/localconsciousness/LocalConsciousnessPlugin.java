@@ -249,7 +249,7 @@ public class LocalConsciousnessPlugin extends Plugin
 				// This is just here to catch weird empty items, such as 798, 12897, 12898, etc.
 			}
 			updateShowPanelButton();
-			updatePanelItemName();
+			if(config.showPanelButton()) updatePanelItemName();
 			// Must be run after updating item image
 			updateSize();
 		});
@@ -268,23 +268,24 @@ public class LocalConsciousnessPlugin extends Plugin
 	private void updateOpacity() {
 	}
 	private void updateShowPanelButton() {
-		if(config.showPanelButton()) {
-			navButton = buildNavigationButton();
-			clientToolbar.addNavigation(navButton);
-
-			updatePanelItemName();
-		} else {
-			if(navButton != null) {
+		clientThread.invoke(() -> {
+			try {
 				clientToolbar.removeNavigation(navButton);
+			} catch(Exception ignored) {}
+
+			if(config.showPanelButton()) {
+				navButton = buildNavigationButton();
+				clientToolbar.addNavigation(navButton);
+
+				updatePanelItemName();
 			}
-		}
+		});
 	}
+	// Must only be run on clientThread
 	private void updatePanelItemName()
 	{
-		clientThread.invokeLater(() -> {
-			String name = itemManager.getItemComposition(currentItemID).getName();
-			panel.updateItemName(name);
-		});
+		String name = itemManager.getItemComposition(currentItemID).getName();
+		panel.updateItemName(name);
 	}
 	public void updateFromSearch()
 	{
