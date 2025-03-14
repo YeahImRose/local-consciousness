@@ -13,9 +13,6 @@ import java.awt.*;
 
 @Slf4j
 public class LocalConsciousnessPanel extends PluginPanel {
-
-
-    private LocalConsciousnessConfig config;
     protected final LocalConsciousnessPlugin plugin;
 
     JButton searchButton;
@@ -39,7 +36,6 @@ public class LocalConsciousnessPanel extends PluginPanel {
     public LocalConsciousnessPanel(Client client, LocalConsciousnessConfig config, final LocalConsciousnessPlugin plugin, ConfigManager configManager) {
         super();
 
-        this.config = config;
         this.plugin = plugin;
 
         setBorder(new EmptyBorder(18, 10, 0, 10));

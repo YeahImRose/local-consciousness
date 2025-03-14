@@ -90,9 +90,9 @@ public class LocalConsciousnessPlugin extends Plugin
 		canvasHeight = client.getCanvasHeight();
 		int sizeOffsetX = width / 2;
 		int sizeOffsetY = height / 2;
-		x = canvasWidth / 2;
+		x = (double) canvasWidth / 2;
 		x -= sizeOffsetX;
-		y = canvasHeight / 2;
+		y = (double) canvasHeight / 2;
 		y -= sizeOffsetY;
 	}
 
@@ -303,12 +303,11 @@ public class LocalConsciousnessPlugin extends Plugin
 					clientThread.invokeLater(() ->
 					{
 						int finalId = itemManager.canonicalize(itemId);
-						final String itemName = itemManager.getItemComposition(finalId).getName();
 						configManager.setConfiguration("localconsciousness", "item", finalId);
 					});
 				})
 				.build();
-	};
+	}
 
 	@Provides
 	LocalConsciousnessConfig provideConfig(ConfigManager configManager)
