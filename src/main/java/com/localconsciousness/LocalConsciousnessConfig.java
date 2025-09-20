@@ -33,7 +33,7 @@ public interface LocalConsciousnessConfig extends Config
 		hidden = true
 	)
 	default int size() {
-		return 100;
+		return 60;
 	}
 
 	@ConfigItem(
@@ -47,7 +47,7 @@ public interface LocalConsciousnessConfig extends Config
 	}
 
 	@Range(
-			max = 100
+			max = 60
 	)
 	@ConfigItem(
 		keyName = "opacity",
@@ -56,6 +56,6 @@ public interface LocalConsciousnessConfig extends Config
 		hidden = true
 	)
 	default int opacity() {
-		return 100;
+		return 70;
 	}
 }

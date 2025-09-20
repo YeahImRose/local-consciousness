@@ -5,19 +5,17 @@ import javax.inject.Inject;
 import javax.swing.*;
 import java.awt.image.BufferedImage;
 import java.awt.image.WritableRaster;
-import java.util.Objects;
-import java.util.Random;
+import java.util.*;
 
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.ChatMessageType;
-import net.runelite.api.Client;
-import net.runelite.api.GameState;
+import net.runelite.api.*;
 import net.runelite.api.events.CanvasSizeChanged;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.events.ConfigChanged;
+import net.runelite.client.game.ItemClient;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.game.chatbox.ChatboxItemSearch;
 import net.runelite.client.plugins.Plugin;
@@ -60,6 +58,8 @@ public class LocalConsciousnessPlugin extends Plugin
 	@Inject
 	@Getter
 	private ClientThread clientThread;
+	@Inject
+	private ItemClient itemClient;
 	private NavigationButton navButton;
 
 	@Getter
@@ -81,7 +81,48 @@ public class LocalConsciousnessPlugin extends Plugin
 	private int canvasWidth;
 	private Random rand;
 	private boolean checkedForOversize = false;
+    private boolean queuedToolbarUpdate = false;
+	private ArrayList<Integer> validIdList = new ArrayList<Integer>();
 
+	@Override
+	protected void startUp() throws Exception
+	{
+		rand = new Random();
+		resetMovement();
+
+		currentItem = itemManager.getImage(config.item());
+		currentItemID = config.item();
+		clientThread.invokeLater(this::updateItem);
+		overlayManager.add(overlay);
+		// Used in place of a check here for needing to add panel button or not
+        updateShowPanelButton();
+		if(validIdList.isEmpty()) {
+			clientThread.invoke(this::computeValidItemIdList);
+		}
+	}
+
+	@Override
+	protected void shutDown() throws Exception
+	{
+		overlayManager.remove(overlay);
+		clientToolbar.removeNavigation(navButton);
+	}
+
+	private void computeValidItemIdList() {
+		for (int i = 0; i < client.getItemCount(); i++) {
+			ItemComposition itemComposition = itemManager.getItemComposition(itemManager.canonicalize(i));
+			//if(itemComposition.getName() == null) continue;
+			if(itemComposition.getName().isEmpty()) continue;
+			if(itemComposition.getName().equalsIgnoreCase("null")) continue;
+			validIdList.add(i);
+		}
+	}
+	private void saveValidItemIdList() {
+
+	}
+	private void loadValidItemIdList() {
+
+	}
 	private void resetMovement()
 	{
 		float wiggle = (rand.nextFloat() * 80.0f) + 5.0f;
@@ -152,35 +193,21 @@ public class LocalConsciousnessPlugin extends Plugin
 		return sprite.getSubimage(left, top, right - left + 1, bottom - top + 1);
 	}
 
-	@Override
-	protected void startUp() throws Exception
-	{
-		rand = new Random();
-		resetMovement();
-
-		currentItem = itemManager.getImage(config.item());
-		currentItemID = config.item();
-		clientThread.invokeLater(this::updateItem);
-		overlayManager.add(overlay);
-		// Used in place of a check here for needing to add panel button or not
-		updateShowPanelButton();
-	}
-
-	@Override
-	protected void shutDown() throws Exception
-	{
-		overlayManager.remove(overlay);
-		clientToolbar.removeNavigation(navButton);
-	}
-
 	@Subscribe
 	protected void onCanvasSizeChanged(CanvasSizeChanged canvasSizeChanged) {
-		resetMovement();
-	}
+        resetMovement();
+    }
 
 	@Subscribe
 	protected void onClientTick(ClientTick tick) {
-		double speed = config.speed() / 10.0d;
+
+        if(queuedToolbarUpdate) {
+            if(!panel.isOpened()) {
+                updateShowPanelButton();
+            }
+        }
+
+        double speed = config.speed() / 10.0d;
 
 		if(x > canvasWidth) x = canvasWidth;
 		if(x < 0) x = 0;
@@ -232,7 +259,7 @@ public class LocalConsciousnessPlugin extends Plugin
 			case "opacity":
 				break;
 			case "showPanelButton":
-				updateShowPanelButton();
+                queuedToolbarUpdate = true;
 				break;
 			default: break;
 		}
@@ -251,8 +278,8 @@ public class LocalConsciousnessPlugin extends Plugin
 			} catch (Exception e) {
 				// This is just here to catch weird empty items, such as 798, 12897, 12898, etc.
 			}
-			updateShowPanelButton();
-			if(config.showPanelButton()) updatePanelItemName();
+            queuedToolbarUpdate = true;
+			if(config.showPanelButton()) updatePanelItem();
 			// Must be run after updating item image
 			updateSize();
 		});
@@ -281,15 +308,17 @@ public class LocalConsciousnessPlugin extends Plugin
 				navButton = buildNavigationButton();
 				clientToolbar.addNavigation(navButton);
 
-				updatePanelItemName();
+				updatePanelItem();
 			}
+            queuedToolbarUpdate = false;
 		});
 	}
 	// Must only be run on clientThread
-	private void updatePanelItemName()
+	private void updatePanelItem()
 	{
 		String name = itemManager.getItemComposition(currentItemID).getName();
 		panel.updateItemName(name);
+        panel.updateItemIcon(currentItem);
 	}
 	public void updateFromSearch()
 	{
@@ -312,6 +341,20 @@ public class LocalConsciousnessPlugin extends Plugin
 					});
 				})
 				.build();
+	}
+
+	public void randomizeItem() {
+		if (client.getGameState() != GameState.LOGGED_IN)
+		{
+			JOptionPane.showMessageDialog(panel,
+					"You must be logged in to randomize.",
+					"Cannot Randomize Item",
+					JOptionPane.ERROR_MESSAGE);
+			return;
+		}
+
+		int randomId = validIdList.get(rand.nextInt(validIdList.size()));
+        configManager.setConfiguration("localconsciousness", "item", randomId);
 	}
 
 	@Provides
