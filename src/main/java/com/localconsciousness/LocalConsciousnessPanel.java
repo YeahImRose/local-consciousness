@@ -6,8 +6,6 @@ import net.runelite.api.Client;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.ui.PluginPanel;
 
-
-import javax.inject.Inject;
 import javax.swing.*;
 import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
@@ -49,6 +47,8 @@ public class LocalConsciousnessPanel extends PluginPanel {
     JSpinner opacitySpinner;
     SpinnerNumberModel opacitySpinnerModel;
 
+    Color borderColor = new Color(220, 138, 0);
+
 
     public LocalConsciousnessPanel(Client client, LocalConsciousnessConfig config, final LocalConsciousnessPlugin plugin, ConfigManager configManager) {
         this.plugin = plugin;
@@ -61,7 +61,31 @@ public class LocalConsciousnessPanel extends PluginPanel {
         this.buttonsPanel = new JPanel();
         this.optionsPanel = new JPanel();
 
-        render();
+        this.fullPanel = new JPanel();
+        this.titlePanel = new JPanel();
+        this.currentItemPanel = new JPanel();
+        this.buttonsPanel = new JPanel();
+        this.optionsPanel = new JPanel();
+        initJLabels();
+        /*JButton reloadButton = new JButton("reload");
+        reloadButton.setFocusable(false);
+        reloadButton.addActionListener(e -> {
+            reloadButton.setFocusable(false);
+            render();
+            reloadButton.setFocusable(true);
+        });*/
+
+        this.fullPanel.add(buildTitlePanel());
+        this.fullPanel.add(buildCurrentItemPanel());
+        this.fullPanel.add(buildButtonsPanel());
+        this.fullPanel.add(buildOptionsPanel());
+
+        //this.fullPanel.add(reloadButton);
+
+        this.setLayout(new BorderLayout());
+        this.setBorder(new EmptyBorder(10, 10, 10, 10));
+        this.fullPanel.setLayout(new BoxLayout(this.fullPanel, BoxLayout.Y_AXIS));
+        this.add(fullPanel, "North");
     }
 
     @Override
@@ -76,36 +100,11 @@ public class LocalConsciousnessPanel extends PluginPanel {
 
     void render() {
         removeAll();
-        this.fullPanel = new JPanel();
-        this.titlePanel = new JPanel();
-        this.currentItemPanel = new JPanel();
-        this.buttonsPanel = new JPanel();
-        this.optionsPanel = new JPanel();
-        initJLabels();
-        JButton reloadButton = new JButton("reload");
-        reloadButton.setFocusable(false);
-        reloadButton.addActionListener(e -> {
-            reloadButton.setFocusable(false);
-            render();
-            reloadButton.setFocusable(true);
-        });
-
-        this.fullPanel.add(buildTitlePanel());
-        this.fullPanel.add(buildCurrentItemPanel());
-        this.fullPanel.add(buildButtonsPanel());
-        this.fullPanel.add(buildOptionsPanel());
-
-        this.fullPanel.add(reloadButton);
-
-        this.setLayout(new BorderLayout());
-        this.setBorder(new EmptyBorder(10, 10, 10, 10));
-        this.fullPanel.setLayout(new BoxLayout(this.fullPanel, BoxLayout.Y_AXIS));
-        this.add(fullPanel, "North");
     }
 
     private JPanel buildTitlePanel() {
         titlePanel.setLayout(new BorderLayout());
-        titlePanel.setBorder(new CompoundBorder(new MatteBorder(0, 0, 1, 0, new Color(37, 125, 141)),
+        titlePanel.setBorder(new CompoundBorder(new MatteBorder(0, 0, 1, 0, borderColor),
                                                 new EmptyBorder(5, 0, 10, 0)));
         pluginTitleLabel.setHorizontalAlignment(SwingConstants.CENTER);
         titlePanel.add(pluginTitleLabel);
@@ -114,7 +113,7 @@ public class LocalConsciousnessPanel extends PluginPanel {
 
     private JPanel buildCurrentItemPanel() {
         currentItemPanel.setLayout(new BoxLayout(this.currentItemPanel, BoxLayout.Y_AXIS));
-        currentItemPanel.setBorder(new CompoundBorder(new MatteBorder(0, 0, 1, 0, new Color(37, 125, 141)),
+        currentItemPanel.setBorder(new CompoundBorder(new MatteBorder(0, 0, 1, 0, borderColor),
                                                       new EmptyBorder(5, 0, 10, 0)));
 
         currentItemLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
@@ -132,6 +131,7 @@ public class LocalConsciousnessPanel extends PluginPanel {
         currentItemName.setAlignmentX(Component.CENTER_ALIGNMENT);
         currentItemName.setHorizontalAlignment(SwingConstants.CENTER);
         currentItemName.setMinimumSize(new Dimension(192, 1));
+        currentItemName.setBorder(new EmptyBorder(5, 0, 0, 0));
         currentItemPanel.add(currentItemName);
 
         return currentItemPanel;
@@ -139,21 +139,21 @@ public class LocalConsciousnessPanel extends PluginPanel {
 
     private JPanel buildButtonsPanel() {
         buttonsPanel.setLayout(new GridLayout(2, 1, 0, 5));
-        buttonsPanel.setBorder(new CompoundBorder(new MatteBorder(0, 0, 1, 0, new Color(37, 125, 141)),
+        buttonsPanel.setBorder(new CompoundBorder(new MatteBorder(0, 0, 1, 0, borderColor),
                                                   new EmptyBorder(10, 0, 10, 0)));
 
         searchButton.setFocusable(false);
         searchButton.addActionListener(e -> {
             searchButton.setFocusable(false);
             plugin.updateFromSearch();
-            searchButton.setFocusable(true);
+            //searchButton.setFocusable(true);
         });
 
         randomButton.setFocusable(false);
         randomButton.addActionListener(e -> {
             randomButton.setFocusable(false);
             plugin.randomizeItem();
-            randomButton.setFocusable(true);
+            //randomButton.setFocusable(true);
         });
 
         buttonsPanel.add(searchButton);
@@ -166,11 +166,11 @@ public class LocalConsciousnessPanel extends PluginPanel {
         this.optionsPanel.setLayout(new GridLayout(3, 2, 2, 10));
         optionsPanel.setBorder(new EmptyBorder(10, 0, 10, 0));
 
-        this.scaleSpinnerModel = new SpinnerNumberModel(config.size(), 1, 5000, 1);
+        this.scaleSpinnerModel = new SpinnerNumberModel(config.size(), 1, 50000, 1);
         this.scaleSpinner = new JSpinner(scaleSpinnerModel);
         scaleSpinner.addChangeListener(e -> configManager.setConfiguration("localconsciousness", "size", (int) scaleSpinner.getValue()));
 
-        this.speedSpinnerModel = new SpinnerNumberModel(config.speed(), 1, 1000, 1);
+        this.speedSpinnerModel = new SpinnerNumberModel(config.speed(), 1, 5000, 1);
         this.speedSpinner = new JSpinner(speedSpinnerModel);
         speedSpinner.addChangeListener(e -> configManager.setConfiguration("localconsciousness", "speed", (int) speedSpinner.getValue()));
 

@@ -43,7 +43,7 @@ public interface LocalConsciousnessConfig extends Config
 		hidden = true
 	)
 	default int speed() {
-		return 50;
+		return 25;
 	}
 
 	@Range(

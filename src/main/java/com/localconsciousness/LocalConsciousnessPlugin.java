@@ -109,12 +109,17 @@ public class LocalConsciousnessPlugin extends Plugin
 	}
 
 	private void computeValidItemIdList() {
+        // Use set to prevent dupes from canonicalization
+        Set<Integer> inventoryModelIds = new HashSet<Integer>();
 		for (int i = 0; i < client.getItemCount(); i++) {
 			ItemComposition itemComposition = itemManager.getItemComposition(itemManager.canonicalize(i));
-			//if(itemComposition.getName() == null) continue;
 			if(itemComposition.getName().isEmpty()) continue;
 			if(itemComposition.getName().equalsIgnoreCase("null")) continue;
-			validIdList.add(i);
+            if(inventoryModelIds.contains(itemComposition.getInventoryModel())) continue;
+            // Don't just use i to avoid adding noted items
+            validIdList.add(itemComposition.getId());
+            // Prevent items with many IDs and duplicate models from spamming the list, like clues and caskets
+            inventoryModelIds.add(itemComposition.getInventoryModel());
 		}
 	}
 	private void saveValidItemIdList() {
@@ -354,6 +359,7 @@ public class LocalConsciousnessPlugin extends Plugin
 		}
 
 		int randomId = validIdList.get(rand.nextInt(validIdList.size()));
+
         configManager.setConfiguration("localconsciousness", "item", randomId);
 	}
 
