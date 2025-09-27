@@ -146,14 +146,12 @@ public class LocalConsciousnessPanel extends PluginPanel {
         searchButton.addActionListener(e -> {
             searchButton.setFocusable(false);
             plugin.updateFromSearch();
-            //searchButton.setFocusable(true);
         });
 
         randomButton.setFocusable(false);
         randomButton.addActionListener(e -> {
             randomButton.setFocusable(false);
             plugin.randomizeItem();
-            //randomButton.setFocusable(true);
         });
 
         buttonsPanel.add(searchButton);
